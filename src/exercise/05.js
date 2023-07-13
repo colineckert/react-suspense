@@ -8,6 +8,7 @@ import {
   PokemonForm,
   PokemonDataView,
   PokemonErrorBoundary,
+  getImageUrlForPokemon,
 } from '../pokemon'
 import {createResource} from '../utils'
 
@@ -17,18 +18,6 @@ import {createResource} from '../utils'
 // approach to work!
 // ❗❗❗❗
 
-// we need to make a place to store the resources outside of render so
-// 🐨 create "cache" object here.
-
-// 🐨 create an Img component that renders a regular <img /> and accepts a src
-// prop and forwards on any remaining props.
-// 🐨 The first thing you do in this component is check whether your
-// imgSrcResourceCache already has a resource for the given src prop. If it does
-// not, then you need to create one (💰 using createResource).
-// 🐨 Once you have the resource, then render the <img />.
-// 💰 Here's what rendering the <img /> should look like:
-// <img src={imgSrcResource.read()} {...props} />
-
 function preloadImage(src) {
   return new Promise(resolve => {
     const img = document.createElement('img')
@@ -37,24 +26,12 @@ function preloadImage(src) {
   })
 }
 
-const imgSrcResourceCache = {}
-
-function Img({src, alt, ...props}) {
-  let imgSrcResource = imgSrcResourceCache[src]
-  if (!imgSrcResource) {
-    imgSrcResource = createResource(preloadImage(src))
-    imgSrcResourceCache[src] = imgSrcResource
-  }
-
-  return <img src={imgSrcResource.read()} alt={alt} {...props} />
-}
-
 function PokemonInfo({pokemonResource}) {
-  const pokemon = pokemonResource.read()
+  const pokemon = pokemonResource.data.read()
   return (
     <div>
       <div className="pokemon-info__img-wrapper">
-        <Img src={pokemon.image} alt={pokemon.name} />
+        <img src={pokemonResource.image.read()} alt={pokemon.name} />
       </div>
       <PokemonDataView pokemon={pokemon} />
     </div>
@@ -80,7 +57,9 @@ function getPokemonResource(name) {
 }
 
 function createPokemonResource(pokemonName) {
-  return createResource(fetchPokemon(pokemonName))
+  const data = createResource(fetchPokemon(pokemonName))
+  const image = createResource(preloadImage(getImageUrlForPokemon(pokemonName)))
+  return {data, image}
 }
 
 function App() {
